@@ -4,16 +4,18 @@ from pathlib import Path
 
 class FSHandler():
     def __init__(self, path):
-        self.user = Path(path).parts[0]
-        self.path = Path(self.user)
-        self.files = json.load(self.path.open())
+        self.user = Path(path).name
+        self.path = Path(path)
+        with open(str(self.path) + '/' + self.user + '.json') as file:
+            self.files = json.load(file)
 
     def create_folder(self, path):
+        print("ok")
         path = Path(path)
-        if path.is_dir() and not path.exists():
+        print("ok")
+        if not path.exists():
+            print("ok")
             path.mkdir(parents=True)
-            # for part in path.parts:
-
             return True
         return False
 

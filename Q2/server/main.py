@@ -1,11 +1,21 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
+from pathlib import Path
 # from urllib3.request import FileHandler
 import mimetypes
 import os
 
+USER = ''
+BASE = Path.cwd()
+
+# TODO Use BASE in all file operations
+# TODO Implement GET_SHARED to get files from other users
+# TODO Finish POST. Receive file. Read from rfile?
+
 
 class AwesomeHTTPHandler(BaseHTTPRequestHandler):
+    logged = False
+    
     def simple_response(self, code, message):
         self.send_response(200)
         self.end_headers()
@@ -21,19 +31,11 @@ class AwesomeHTTPHandler(BaseHTTPRequestHandler):
         try:
             os.makedirs(path)
             self.simple_response(200, "Path " + path +
-                                 "created successfully.")
-        except:
+                                 " created successfully.")
+        except():
             self.send_response(500)
             self.end_headers()
             raise
-
-    def login(self, path):
-        if not os.path.isdir(path):
-            os.mkdir(path)
-            self.simple_response(200, "User " + path +
-                                 " successfully logged in.\n")
-        else:
-            self.simple_response(200, "Already logged in\n")
     
     def file_info(self, path):
         # determine file name
@@ -49,13 +51,20 @@ class AwesomeHTTPHandler(BaseHTTPRequestHandler):
             content_type = 'application/octet-stream'
 
         return file_name, content_type
+    
+    def is_logged(self):
+        if not self.logged:
+            self.simple_response(400, "Must make login")
+            return False
+        return True
 
     def do_GET(self):
+        assert(self.is_logged())
         path = self.clean_path()
         if path is '':
             self.simple_response(403, "The root path is not accesible.")
         elif path.endswith('/'):
-            self.simple_response(403, "Use POST to create folders or login.")
+            self.simple_response(403, "Use POST to create folders")
         elif os.path.isfile(path):
             file_name, content_type = self.file_info(path)
             self.send_response(200)
@@ -69,17 +78,23 @@ class AwesomeHTTPHandler(BaseHTTPRequestHandler):
             self.simple_response(403, '')
     
     def do_POST(self):
+        assert(self.is_logged())
         path = self.clean_path()
         if path is '':
             self.simple_response(403, "The root path is not accesible.")
         # detect login or folder creation attempt
         elif path.endswith('/'):
-            if path.count('/') is 1:
-                self.login(path)
-            else:
-                self.create_folder(path)
+            self.create_folder(path)
         else:
-            file_name, content_type = self.file_info(path)            
+            file_name, content_type = self.file_info(path)
+
+    def do_LOGIN(self):
+        path = Path(self.clean_path())
+        USER = path.name
+        BASE = BASE / user
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        self.logged = True
 
 
 class MultiThreadedHTTPServer(HTTPServer, ThreadingMixIn):
@@ -92,6 +107,7 @@ class MultiThreadedHTTPServer(HTTPServer, ThreadingMixIn):
 #     print("Server up and running. Control-C to terminate.")
 #     http_server.serve_forever()
 
-http_server = MultiThreadedHTTPServer(('', 12345), AwesomeHTTPHandler)
-print("Server up and running. Control-C to terminate.")
-http_server.serve_forever()
+def main():
+    http_server = MultiThreadedHTTPServer(('', 12345), AwesomeHTTPHandler)
+    print("Server up and running. Control-C to terminate.")
+    http_server.serve_forever()
