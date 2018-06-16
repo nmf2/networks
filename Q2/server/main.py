@@ -9,7 +9,7 @@ import os
 
 
 class AwesomeHTTPHandler(BaseHTTPRequestHandler):
-    LOGGED = True
+    LOGGED = False
     BASE = ''
     USER = ''
 
@@ -89,6 +89,7 @@ class AwesomeHTTPHandler(BaseHTTPRequestHandler):
         assert(self.is_logged())
         assert(self.path_requirements(path))
         file = Path(path)
+        print(file)
         if file.exists():
             # send file
             self.send_response(200)
@@ -99,7 +100,7 @@ class AwesomeHTTPHandler(BaseHTTPRequestHandler):
             with open(str(file), 'rb') as data:
                 self.wfile.write(data.read())
         else:
-            self.simple_response(403, 'File does not exist')
+            self.simple_response(404, 'File does not exist')
 
     def do_POST(self):
         path = self.clean_path()
@@ -139,13 +140,17 @@ class AwesomeHTTPHandler(BaseHTTPRequestHandler):
     def do_LIST(self):
         assert(self.is_logged())
         user = Path(self.clean_path()).name
+        path = str(Path.cwd()) + '/' + user
         if user is '':
             self.simple_response(400, "Bad path")
             return
         print("user: '{}'".format(user))
-        files_list = os.listdir(str(Path.cwd()) + '/' + user)
-        files_list.sort()
-        self.simple_response(200, '\n'.join(files_list))
+        if Path(path).exists():
+            files_list = os.listdir(path)
+            files_list.sort()
+            self.simple_response(200, '\n'.join(files_list))
+        else:
+            self.simple_response(400, "Invalid username")
 
     def do_LOGIN(self):
         path = Path(self.clean_path())
