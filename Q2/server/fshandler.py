@@ -10,11 +10,8 @@ class FSHandler():
             self.files = json.load(file)
 
     def create_folder(self, path):
-        print("ok")
         path = Path(path)
-        print("ok")
         if not path.exists():
-            print("ok")
             path.mkdir(parents=True)
             return True
         return False
